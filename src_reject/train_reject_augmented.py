@@ -20,13 +20,13 @@ from collections import Counter
 import progressbar
 import nltk
 
-import log
-import utils
-import error
-import config
-import model_reject
-import train_base
-import dataloader
+import src_reject.log as log
+import src_reject.utils as utils
+import src_reject.error as error
+import src_reject.config as config
+import src_reject.model_reject as model_reject
+import src_reject.train_base as train_base
+import src_reject.dataloader as dataloader
 import pickle
 
 # results_path = "../results/Model4Reject" + "/" + datetime.now().strftime("%Y%m%d%H%M%S")
@@ -808,8 +808,8 @@ if __name__ == "__main__":
         results_path + "reject_full_%s_unseen%.2f_augmented%d_negativeAll_max%d_cnn_iteration_statistics" % (dataset_name, unseen_percentage, num_augmented, max_length),
         iteration_statistics=iteration_statistics
     )
-
-    pickle.dump(pass_to_phase2, config.rejector_file)
+    with open(config.rejector_file, 'wb') as pickle_file:
+        pickle.dump(pass_to_phase2, pickle_file)
 
     pass
 

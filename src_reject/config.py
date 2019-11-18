@@ -48,7 +48,7 @@ batch_size = 32
 # unseen_rate = 0.25
 unseen_rate = args.unseen
 
-augmentation = 0
+augmentation = 1
 assert augmentation >= 0
 
 model = args.model

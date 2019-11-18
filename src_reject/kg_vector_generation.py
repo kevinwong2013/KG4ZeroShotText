@@ -4,7 +4,7 @@ import pprint as pp
 import urllib.request, urllib.parse
 from sklearn.metrics.pairwise import cosine_similarity
 from json import JSONDecodeError
-from text_to_uri import *
+from src_reject.text_to_uri import *
 
 import nltk
 from nltk.corpus import stopwords
@@ -12,7 +12,7 @@ from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 from tqdm import tqdm
 
-import config
+import src_reject.config as config
 
 ## Global variables initialisation
 

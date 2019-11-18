@@ -9,7 +9,7 @@ import tensorflow as tf
 import tensorlayer as tl
 import progressbar
 
-import config
+import src_reject.config as config
 
 
 START_ID = '<START_ID>'

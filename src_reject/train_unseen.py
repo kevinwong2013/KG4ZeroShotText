@@ -18,15 +18,16 @@ import progressbar
 import nltk
 from scipy.spatial.distance import cosine
 
-import log
-import utils
-import error
-import config
-import model_unseen
-import train_base
-import dataloader
+import src_reject.log as log
+import src_reject.utils as utils
+import src_reject.error as error
+import src_reject.config as config
+import src_reject.model_unseen as model_unseen
+import src_reject.train_base as train_base
+import src_reject.dataloader as dataloader
 
 results_path = "../results/"
+
 
 class Controller4Unseen(train_base.Base_Controller):
 
@@ -123,7 +124,8 @@ class Controller4Unseen(train_base.Base_Controller):
         assert len(unseen_text_seqs) == len(unseen_class_list)
         print("Text seqs of unseen classes: %d" % len(unseen_text_seqs))
         if augdata:
-            print("Augmented data num of each unseen class {%s}" % (", ".join(["%s:%s" % (k, v) for k, v in unseen_class_counter.items()])))
+            print("Augmented data num of each unseen class {%s}" % (
+                ", ".join(["%s:%s" % (k, v) for k, v in unseen_class_counter.items()])))
         return unseen_text_seqs, unseen_class_list
 
     def prepro_encode(self, textlist):
@@ -135,7 +137,8 @@ class Controller4Unseen(train_base.Base_Controller):
             #     startid = 1
             startid = 1
             newtextlist.append(text[startid:-1] + [self.vocab.pad_id])
-        newtextlist = tl.prepro.pad_sequences(newtextlist, maxlen=self.model.max_length, dtype='int64', padding='post', truncating='post', value=self.vocab.pad_id)
+        newtextlist = tl.prepro.pad_sequences(newtextlist, maxlen=self.model.max_length, dtype='int64', padding='post',
+                                              truncating='post', value=self.vocab.pad_id)
         for idx, text in enumerate(newtextlist):
             newtextlist[idx] = text[:-1] + [self.vocab.pad_id]
 
@@ -177,7 +180,8 @@ class Controller4Unseen(train_base.Base_Controller):
         class_embed = np.zeros((len(class_id_list), self.model.max_length, self.model.word_embedding_dim))
 
         for idx, class_id in enumerate(class_id_list):
-            class_embed[idx, :, :] = np.repeat([self.word_embed_mat[self.vocab.word_to_id(self.class_dict[class_id])]], self.model.max_length, axis=0)
+            class_embed[idx, :, :] = np.repeat([self.word_embed_mat[self.vocab.word_to_id(self.class_dict[class_id])]],
+                                               self.model.max_length, axis=0)
 
         return class_embed
 
@@ -198,7 +202,8 @@ class Controller4Unseen(train_base.Base_Controller):
                 word = self.vocab.id_to_word(word_id)
                 if self.lemma:
                     new_word = nltk.pos_tag([word])  # a list of words à a list of words with part of speech
-                    new_word = [self.lemmatizer.lemmatize(t[0], config.pos_dict[t[1]]) for t in new_word if t[1] in config.pos_dict]
+                    new_word = [self.lemmatizer.lemmatize(t[0], config.pos_dict[t[1]]) for t in new_word if
+                                t[1] in config.pos_dict]
                     if len(new_word) > 0:
                         word = new_word[0]
                 kg_vector[widx, :] = dataloader.get_kg_vector(self.kg_vector_dict, self.class_dict[class_id], word)
@@ -256,20 +261,24 @@ class Controller4Unseen(train_base.Base_Controller):
             global_step = cstep + epoch * train_steps
 
             # category_logits = [1 if randint(0, config.negative_sample) == 0 else 0 for _ in range(config.batch_size)]
-            category_logits = [1 if randint(0, config.negative_sample + epoch * config.negative_increase) == 0 else 0 for _ in range(config.batch_size)]
+            category_logits = [1 if randint(0, config.negative_sample + epoch * config.negative_increase) == 0 else 0
+                               for _ in range(config.batch_size)]
             # category_logits = [1 if randint(0, config.negative_sample + epoch * 3) == 0 else 0 for _ in range(config.batch_size)]
 
-            true_class_id_mini = [class_list[idx] for idx in train_order[cstep * config.batch_size : (cstep + 1) * config.batch_size]]
-            text_seqs_mini = [text_seqs[idx] for idx in train_order[cstep * config.batch_size : (cstep + 1) * config.batch_size]]
+            true_class_id_mini = [class_list[idx] for idx in
+                                  train_order[cstep * config.batch_size: (cstep + 1) * config.batch_size]]
+            text_seqs_mini = [text_seqs[idx] for idx in
+                              train_order[cstep * config.batch_size: (cstep + 1) * config.batch_size]]
 
             if not config.model == "autoencoder":
                 # random text
-                true_class_id_mini = true_class_id_mini[:-3]  + [-1, -1, -1]
+                true_class_id_mini = true_class_id_mini[:-3] + [-1, -1, -1]
                 text_seqs_mini = text_seqs_mini[:-3] + self.get_random_text(3)
             else:
                 tmpid = random.choice(list(self.class_dict.keys()))
                 text_seqs_mini = text_seqs_mini[:-1] + \
-                                 [[self.vocab.start_id, self.vocab.word_to_id(self.class_dict[tmpid]), self.vocab.end_id]]
+                                 [[self.vocab.start_id, self.vocab.word_to_id(self.class_dict[tmpid]),
+                                   self.vocab.end_id]]
 
             encode_seqs_id_mini, encode_seqs_mat_mini = self.prepro_encode(text_seqs_mini)
 
@@ -315,7 +324,8 @@ class Controller4Unseen(train_base.Base_Controller):
 
             else:
                 if config.model == "vwvc":
-                    kg_vector_seqs_mini = np.zeros((config.batch_size, self.model.max_length, self.model.kg_embedding_dim))
+                    kg_vector_seqs_mini = np.zeros(
+                        (config.batch_size, self.model.max_length, self.model.kg_embedding_dim))
                 else:
                     kg_vector_seqs_mini = self.get_kg_vector_given_class(encode_seqs_id_mini, class_id_mini)
                 results = self.sess.run([
@@ -337,7 +347,7 @@ class Controller4Unseen(train_base.Base_Controller):
             if cstep % config.cstep_print_unseen == 0 and cstep > 0:
                 print(
                     "[Train] Epoch: [%3d][%4d/%4d] time: %.4f, lr: %.8f, loss: %s" %
-                    (epoch, cstep, train_steps, time.time() - step_time, results[-2], all_loss / (cstep + 1) )
+                    (epoch, cstep, train_steps, time.time() - step_time, results[-2], all_loss / (cstep + 1))
                 )
                 step_time = time.time()
                 # print(time.time() - step_time)
@@ -345,7 +355,7 @@ class Controller4Unseen(train_base.Base_Controller):
 
         print(
             "[Train Sum] Epoch: [%3d] time: %.4f, lr: %.8f, loss: %s" %
-            (epoch, time.time() - start_time, results[-2], all_loss / train_steps )
+            (epoch, time.time() - start_time, results[-2], all_loss / train_steps)
         )
 
         return all_loss / train_steps
@@ -361,11 +371,10 @@ class Controller4Unseen(train_base.Base_Controller):
         topk_list = list()
         pred_class_list = list()
 
-
         class_id_mini = np.array(list(self.class_dict.keys()) + [1] * (config.batch_size - len(self.class_dict)))
         class_label_embed_mini = self.get_class_label_embed(class_id_mini)
 
-        class_text_state  = self.sess.run([
+        class_text_state = self.sess.run([
             self.model.test_text_state
         ], feed_dict={
             self.model.encode_seqs: class_label_embed_mini,
@@ -379,13 +388,13 @@ class Controller4Unseen(train_base.Base_Controller):
 
         for cstep in range(test_steps):
 
-            text_seqs_mini = text_seqs[cstep * config.batch_size : (cstep + 1) * config.batch_size]
+            text_seqs_mini = text_seqs[cstep * config.batch_size: (cstep + 1) * config.batch_size]
 
             encode_seqs_id_mini, encode_seqs_mat_mini = self.prepro_encode(text_seqs_mini)
 
             pred_mat = np.zeros([config.batch_size, len(self.class_dict)])
 
-            test_text_state  = self.sess.run([
+            test_text_state = self.sess.run([
                 self.model.test_text_state,
             ], feed_dict={
                 self.model.encode_seqs: encode_seqs_mat_mini,
@@ -421,7 +430,8 @@ class Controller4Unseen(train_base.Base_Controller):
                 threshold = 0.5
                 tmp_pred[tmp_pred > threshold] = 1
                 tmp_pred[tmp_pred <= threshold] = 0
-                tmp_gt = self.get_one_hot_results(np.reshape(np.array(class_list[ : (cstep + 1) * config.batch_size]), newshape=(-1, 1)))
+                tmp_gt = self.get_one_hot_results(
+                    np.reshape(np.array(class_list[: (cstep + 1) * config.batch_size]), newshape=(-1, 1)))
                 tmp_stats = utils.get_statistics(tmp_pred, tmp_gt, single_label_pred=False)
 
                 print(
@@ -438,7 +448,8 @@ class Controller4Unseen(train_base.Base_Controller):
         tmp_pred[tmp_pred <= threshold] = 0
 
         # topk_pred = self.get_one_hot_results(np.concatenate(topk_list, axis=0))
-        ground_truth = self.get_one_hot_results(np.reshape(np.array(class_list[: test_steps * config.batch_size]), newshape=(-1, 1)))
+        ground_truth = self.get_one_hot_results(
+            np.reshape(np.array(class_list[: test_steps * config.batch_size]), newshape=(-1, 1)))
 
         # align = np.concatenate(align_list, axis=0)
         # kg_vector_full = np.concatenate(kg_vector_list, axis=0)
@@ -470,8 +481,8 @@ class Controller4Unseen(train_base.Base_Controller):
 
         for cstep in range(test_steps):
 
-            text_seqs_mini = text_seqs[cstep * config.batch_size : (cstep + 1) * config.batch_size]
-            true_class_id_mini = class_list[cstep * config.batch_size : (cstep + 1) * config.batch_size]
+            text_seqs_mini = text_seqs[cstep * config.batch_size: (cstep + 1) * config.batch_size]
+            true_class_id_mini = class_list[cstep * config.batch_size: (cstep + 1) * config.batch_size]
 
             encode_seqs_id_mini, encode_seqs_mat_mini = self.prepro_encode(text_seqs_mini)
 
@@ -485,15 +496,12 @@ class Controller4Unseen(train_base.Base_Controller):
                     continue
 
                 class_id_mini = np.array([class_id] * config.batch_size)
-
                 class_label_embed_mini = self.get_class_label_embed(class_id_mini)
-
                 category_logits = np.zeros([config.batch_size, 1])
                 for b in range(config.batch_size):
                     category_logits[b, 0] = int(class_id == true_class_id_mini[b])
-
                 if config.model == "cnnfc" or config.model == "rnnfc":
-                    test_loss, pred  = self.sess.run([
+                    test_loss, pred = self.sess.run([
                         self.model.test_loss,
                         self.model.test_net.outputs,
                     ], feed_dict={
@@ -503,11 +511,11 @@ class Controller4Unseen(train_base.Base_Controller):
                     })
                 else:
                     if config.model == "vwvc":
-                        kg_vector_seqs_mini = np.zeros((config.batch_size, self.model.max_length, self.model.kg_embedding_dim))
+                        kg_vector_seqs_mini = np.zeros(
+                            (config.batch_size, self.model.max_length, self.model.kg_embedding_dim))
                     else:
                         kg_vector_seqs_mini = self.get_kg_vector_given_class(encode_seqs_id_mini, class_id_mini)
-
-                    test_loss, pred  = self.sess.run([
+                    test_loss, pred = self.sess.run([
                         self.model.test_loss,
                         self.model.test_net.outputs,
                         # self.model.test_align.outputs,
@@ -543,7 +551,8 @@ class Controller4Unseen(train_base.Base_Controller):
                 threshold = 0.5
                 tmp_pred[tmp_pred > threshold] = 1
                 tmp_pred[tmp_pred <= threshold] = 0
-                tmp_gt = self.get_one_hot_results(np.reshape(np.array(class_list[ : (cstep + 1) * config.batch_size]), newshape=(-1, 1)))
+                tmp_gt = self.get_one_hot_results(
+                    np.reshape(np.array(class_list[: (cstep + 1) * config.batch_size]), newshape=(-1, 1)))
                 tmp_stats = utils.get_statistics(tmp_pred, tmp_gt, single_label_pred=False)
 
                 print(
@@ -560,7 +569,8 @@ class Controller4Unseen(train_base.Base_Controller):
         tmp_pred[tmp_pred <= threshold] = 0
 
         # topk_pred = self.get_one_hot_results(np.concatenate(topk_list, axis=0))
-        ground_truth = self.get_one_hot_results(np.reshape(np.array(class_list[: test_steps * config.batch_size]), newshape=(-1, 1)))
+        ground_truth = self.get_one_hot_results(
+            np.reshape(np.array(class_list[: test_steps * config.batch_size]), newshape=(-1, 1)))
 
         # align = np.concatenate(align_list, axis=0)
         # kg_vector_full = np.concatenate(kg_vector_list, axis=0)
@@ -575,7 +585,8 @@ class Controller4Unseen(train_base.Base_Controller):
         # return stats, prediction, ground_truth, align, kg_vector_full
         return stats, prediction, ground_truth, np.array([0]), np.array([0])
 
-    def controller(self, train_text_seqs, train_class_list, train_aug_text_seqs, train_aug_class_list, test_text_seqs, test_class_list, rgroup, train_epoch=config.train_epoch, save_test_per_epoch=1):
+    def controller(self, train_text_seqs, train_class_list, train_aug_text_seqs, train_aug_class_list, test_text_seqs,
+                   test_class_list, rgroup, train_epoch=config.train_epoch, save_test_per_epoch=1):
 
         last_save_epoch = self.base_epoch
         global_epoch = self.base_epoch + 1
@@ -587,7 +598,8 @@ class Controller4Unseen(train_base.Base_Controller):
             )
 
         train_text_seqs, train_class_list = self.get_text_of_seen_class(train_text_seqs, train_class_list)
-        train_aug_text_seqs, train_aug_class_list = self.get_text_of_unseen_class(train_aug_text_seqs, train_aug_class_list, augdata=True)
+        train_aug_text_seqs, train_aug_class_list = self.get_text_of_unseen_class(train_aug_text_seqs,
+                                                                                  train_aug_class_list, augdata=True)
 
         assert len(train_aug_class_list) == len(train_aug_text_seqs)
         assert len(train_aug_class_list) <= config.augmentation * len(self.unseen_class)
@@ -629,11 +641,10 @@ class Controller4Unseen(train_base.Base_Controller):
                         global_epoch,
                         train_text_seqs,
                         train_class_list,
-                        max_train_steps=1000  \
+                        max_train_steps=1000 \
                             if not (config.dataset == "dbpedia" and config.unseen_rate == 0.5 and "kg" in config.model) \
                             else 300
                     )
-
 
             if global_epoch > self.base_epoch and global_epoch % save_test_per_epoch == 0:
                 self.save_model(
@@ -772,7 +783,7 @@ class Controller4Unseen(train_base.Base_Controller):
             align_unseen=align_unseen,
             kg_vector_seen=kg_vector_seen,
             kg_vector_unseen=kg_vector_unseen,
-            )
+        )
 
         # error.rejection_single_label(self.log_save_dir + "test_%d.npz" % global_epoch)
         # error.classify_single_label(self.log_save_dir + "test_%d.npz" % global_epoch)
@@ -781,8 +792,8 @@ class Controller4Unseen(train_base.Base_Controller):
         # class_distance_matrix = np.loadtxt(config.zhang15_dbpedia_dir + 'class_distance.txt')
         # error.classify_adjust_single_label(self.log_save_dir + "test_%d.npz" % global_epoch, class_distance_matrix)
 
-def run_dbpedia():
 
+def run_dbpedia():
     random_group = dataloader.get_random_group(config.zhang15_dbpedia_class_random_group_path)
 
     vocab = dataloader.build_vocabulary_from_full_corpus(
@@ -858,17 +869,17 @@ def run_dbpedia():
 
     if config.augmentation > 0:
         train_aug_from_class_list = dataloader.load_data_class(
-            filename=config.zhang15_dbpedia_train_aug_path,
+            filename=config.zhang15_dbpedia_train_augmented_path,
             column="from_class",
         )
 
         train_aug_class_list = dataloader.load_data_class(
-            filename=config.zhang15_dbpedia_train_aug_path,
+            filename=config.zhang15_dbpedia_train_augmented_path,
             column="to_class",
         )
 
         train_aug_text_seqs = dataloader.load_data_from_text_given_vocab(
-            config.zhang15_dbpedia_train_aug_path, vocab, config.zhang15_dbpedia_train_aug_processed_path,
+            config.zhang15_dbpedia_train_augmented_path, vocab, config.zhang15_dbpedia_train_augmented_processed_path,
             column="text", force_process=False
         )
 
@@ -904,7 +915,8 @@ def run_dbpedia():
             train_aug_class_list_from_seen.append(train_aug_class_list[tidx])
             train_aug_text_seqs_from_seen.append(train_aug_text_seqs[tidx])
         assert len(train_aug_class_list_from_seen) == len(train_aug_text_seqs_from_seen)
-        print("Augmented data from seen class: %d" % len(train_aug_class_list_from_seen), utils.counter_of_list(train_aug_class_list_from_seen))
+        print("Augmented data from seen class: %d" % len(train_aug_class_list_from_seen),
+              utils.counter_of_list(train_aug_class_list_from_seen))
 
         with tf.Graph().as_default() as graph:
             tl.layers.clear_layers_name()
@@ -913,7 +925,9 @@ def run_dbpedia():
                 # model_name="unseen_full_zhang15_dbpedia_kg3_cluster_3group_random%d_unseen%s_max%d_cnn_negative%dincrease%d_randomtext_aug%d" \
                 # model_name="unseen_full_zhang15_dbpedia_kg3_cluster_3group_kgonly_random%d_unseen%s_max%d_cnn_negative%dincrease%d_randomtext_aug%d" \
                 model_name="unseen_full_zhang15_dbpedia_kg3_cluster_3group_%s_random%d_unseen%s_max%d_cnn_negative%dincrease%d_randomtext_aug%d" \
-                               % (config.model, i + 1, "-".join(str(_) for _ in rgroup[1]), max_length, config.negative_sample, config.negative_increase, config.augmentation),
+                           % (
+                           config.model, i + 1, "-".join(str(_) for _ in rgroup[1]), max_length, config.negative_sample,
+                           config.negative_increase, config.augmentation),
                 start_learning_rate=0.0001,
                 decay_rate=0.8,
                 decay_steps=2e3,
@@ -948,8 +962,8 @@ def run_dbpedia():
             ctl.sess.close()
     pass
 
-def run_20news():
 
+def run_20news():
     random_group = dataloader.get_random_group(config.news20_class_random_group_path)
 
     vocab = dataloader.build_vocabulary_from_full_corpus(
@@ -1023,18 +1037,18 @@ def run_20news():
 
     if config.augmentation > 0:
         train_aug_from_class_list = dataloader.load_data_class(
-            filename=config.news20_train_aug_path,
+            filename=config.news20_train_augmented_path,
             column="from_class",
         )
 
         train_aug_class_list = dataloader.load_data_class(
-            filename=config.news20_train_aug_path,
+            filename=config.news20_train_augmented_path,
             column="to_class",
         )
 
         train_aug_text_seqs = dataloader.load_data_from_text_given_vocab(
-            config.news20_train_aug_path, vocab, config.news20_train_aug_processed_path,
-            column="text", force_process=False
+            config.news20_train_augmented_path, vocab, config.news20_train_augmented_processed_path,
+            column="text", force_process=True
         )
 
         print("Augmented data size origin: ", utils.counter_of_list(train_aug_class_list))
@@ -1044,6 +1058,7 @@ def run_20news():
         train_aug_class_list = []
         train_aug_text_seqs = []
 
+    print(len(train_aug_class_list), len(train_aug_text_seqs))
     assert len(train_aug_class_list) == len(train_aug_text_seqs)
 
     lenlist = [len(text) for text in test_text_seqs] + [len(text) for text in train_text_seqs]
@@ -1069,7 +1084,8 @@ def run_20news():
             train_aug_class_list_from_seen.append(train_aug_class_list[tidx])
             train_aug_text_seqs_from_seen.append(train_aug_text_seqs[tidx])
         assert len(train_aug_class_list_from_seen) == len(train_aug_text_seqs_from_seen)
-        print("Augmented data from seen class: %d" % len(train_aug_class_list_from_seen), utils.counter_of_list(train_aug_class_list_from_seen))
+        print("Augmented data from seen class: %d" % len(train_aug_class_list_from_seen),
+              utils.counter_of_list(train_aug_class_list_from_seen))
 
         with tf.Graph().as_default() as graph:
             tl.layers.clear_layers_name()
@@ -1079,7 +1095,9 @@ def run_20news():
                 # model_name="unseen_selected_tfidf_news20_kg3_cluster_3group_only_smallepoch5_random%d_unseen%s_max%d_cnn_negative%dincrease%d_randomtext" \
                 # model_name="unseen_selected_tfidf_news20_kg3_cluster_3group_kgonly_random%d_unseen%s_max%d_cnn_negative%dincrease%d_randomtext_aug%d" \
                 model_name="unseen_selected_tfidf_news20_kg3_cluster_3group_%s_random%d_unseen%s_max%d_cnn_negative%dincrease%d_randomtext_aug%d" \
-                               % (config.model, i + 1, "-".join(str(_) for _ in rgroup[1]), max_length, config.negative_sample, config.negative_increase, config.augmentation),
+                           % (
+                           config.model, i + 1, "-".join(str(_) for _ in rgroup[1]), max_length, config.negative_sample,
+                           config.negative_increase, config.augmentation),
                 start_learning_rate=0.0001,
                 decay_rate=0.5,
                 decay_steps=600,
@@ -1112,8 +1130,8 @@ def run_20news():
             ctl.sess.close()
     pass
 
-def run_amazon():
 
+def run_amazon():
     random_group = dataloader.get_random_group(config.chen14_elec_class_random_group_path)
 
     vocab = dataloader.build_vocabulary_from_full_corpus(
@@ -1198,7 +1216,8 @@ def run_amazon():
 
             mdl = model_unseen.Model4Unseen(
                 model_name="unseen_full_chen14_elec_kg3_cluster_3group_random%d_unseen%s_max%d_cnn_negative%dincrease%d_randomtext" \
-                           % (i + 1, "-".join(str(_) for _ in rgroup[1]), max_length, config.negative_sample, config.negative_increase),
+                           % (i + 1, "-".join(str(_) for _ in rgroup[1]), max_length, config.negative_sample,
+                              config.negative_increase),
                 start_learning_rate=0.0001,
                 decay_rate=0.5,
                 decay_steps=2000,
@@ -1216,11 +1235,13 @@ def run_amazon():
                 random_unseen_class_list=rgroup[1],
                 base_epoch=-1,
             )
-            ctl.controller(train_text_seqs, train_class_list, test_text_seqs, test_class_list, rgroup=rgroup, train_epoch=10)
+            ctl.controller(train_text_seqs, train_class_list, test_text_seqs, test_class_list, rgroup=rgroup,
+                           train_epoch=10)
             # ctl.controller4test(test_text_seqs, test_class_list, unseen_class_list=ctl.unseen_class, rgroup=rgroup, base_epoch=5)
 
             ctl.sess.close()
     pass
+
 
 if __name__ == "__main__":
 
@@ -1231,6 +1252,3 @@ if __name__ == "__main__":
     else:
         raise Exception("config.dataset %s not found" % config.dataset)
     pass
-
-
-

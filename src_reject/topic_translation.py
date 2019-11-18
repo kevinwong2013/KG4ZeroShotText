@@ -7,9 +7,9 @@ import gensim.downloader as api
 from gensim.models import KeyedVectors
 from gensim.test.utils import datapath, get_tmpfile
 from gensim.scripts.glove2word2vec import glove2word2vec
-import config
-import utils
-import dataloader 
+import src_reject.config as config
+import src_reject.utils as utils
+import src_reject.dataloader as dataloader
 import progressbar
 import nltk
 from nltk.corpus import stopwords
