@@ -17,15 +17,16 @@ from random import randint
 import progressbar
 import nltk
 
-import log
-import utils
-import error
-import config
-import model_seen
-import train_base
-import dataloader
+import src_reject.log as log
+import src_reject.utils as utils
+import src_reject.error as error
+import src_reject.config as config
+import src_reject.model_seen as model_seen
+import src_reject.train_base as train_base
+import src_reject.dataloader as dataloader
 
 results_path = "../results/"
+
 
 class Controller4Seen(train_base.Base_Controller):
 
@@ -116,7 +117,8 @@ class Controller4Seen(train_base.Base_Controller):
             #     startid = 1
             startid = 1
             newtextlist.append(text[startid:-1] + [self.vocab.pad_id])
-        newtextlist = tl.prepro.pad_sequences(newtextlist, maxlen=self.model.max_length, dtype='int64', padding='post', truncating='post', value=self.vocab.pad_id)
+        newtextlist = tl.prepro.pad_sequences(newtextlist, maxlen=self.model.max_length, dtype='int64', padding='post',
+                                              truncating='post', value=self.vocab.pad_id)
         for idx, text in enumerate(newtextlist):
             newtextlist[idx] = text[:-1] + [self.vocab.pad_id]
 
@@ -171,8 +173,10 @@ class Controller4Seen(train_base.Base_Controller):
         for cstep in range(train_steps):
             global_step = cstep + epoch * train_steps
 
-            class_idx_mini = [self.seen_class_map2index[class_list[idx]] for idx in train_order[cstep * config.batch_size : (cstep + 1) * config.batch_size]]
-            text_seqs_mini = [text_seqs[idx] for idx in train_order[cstep * config.batch_size : (cstep + 1) * config.batch_size]]
+            class_idx_mini = [self.seen_class_map2index[class_list[idx]] for idx in
+                              train_order[cstep * config.batch_size: (cstep + 1) * config.batch_size]]
+            text_seqs_mini = [text_seqs[idx] for idx in
+                              train_order[cstep * config.batch_size: (cstep + 1) * config.batch_size]]
 
             encode_seqs_id_mini, encode_seqs_mat_mini = self.prepro_encode(text_seqs_mini, True)
 
@@ -193,7 +197,7 @@ class Controller4Seen(train_base.Base_Controller):
             if cstep % config.cstep_print == 0 and cstep > 0:
                 print(
                     "[Train] Epoch: [%3d][%4d/%4d] time: %.4f, lr: %.8f, loss: %s" %
-                    (epoch, cstep, train_steps, time.time() - step_time, results[-2], all_loss / (cstep + 1) )
+                    (epoch, cstep, train_steps, time.time() - step_time, results[-2], all_loss / (cstep + 1))
                 )
                 # print(results[1][:10])
                 # print(class_idx_mini[:10])
@@ -202,7 +206,7 @@ class Controller4Seen(train_base.Base_Controller):
 
         print(
             "[Train Sum] Epoch: [%3d] time: %.4f, lr: %.8f, loss: %s" %
-            (epoch, time.time() - start_time, results[-2], all_loss / train_steps )
+            (epoch, time.time() - start_time, results[-2], all_loss / train_steps)
         )
 
         return all_loss / train_steps
@@ -223,15 +227,16 @@ class Controller4Seen(train_base.Base_Controller):
 
         for cstep in range(test_steps):
 
-            text_seqs_mini = text_seqs[cstep * config.batch_size : (cstep + 1) * config.batch_size]
-            class_idx_or_mini = [_ for _ in class_list[cstep * config.batch_size : (cstep + 1) * config.batch_size]]
-            class_idx_mini = [self.seen_class_map2index[_] for _ in class_list[cstep * config.batch_size : (cstep + 1) * config.batch_size]]
+            text_seqs_mini = text_seqs[cstep * config.batch_size: (cstep + 1) * config.batch_size]
+            class_idx_or_mini = [_ for _ in class_list[cstep * config.batch_size: (cstep + 1) * config.batch_size]]
+            class_idx_mini = [self.seen_class_map2index[_] for _ in
+                              class_list[cstep * config.batch_size: (cstep + 1) * config.batch_size]]
 
             encode_seqs_id_mini, encode_seqs_mat_mini = self.prepro_encode(text_seqs_mini, False)
 
             pred_mat = np.zeros([config.batch_size, len(self.class_dict)])
 
-            test_loss, out  = self.sess.run([
+            test_loss, out = self.sess.run([
                 self.model.test_loss,
                 self.model.test_net.outputs,
             ], feed_dict={
@@ -252,16 +257,19 @@ class Controller4Seen(train_base.Base_Controller):
 
             if cstep % config.cstep_print == 0 and cstep > 0:
                 tmp_topk = np.concatenate(topk_list, axis=0)
-                tmp_topk = self.get_one_hot_results(np.array(tmp_topk[(cstep + 1 - config.cstep_print) * config.batch_size : (cstep + 1) * config.batch_size]))
-                tmp_gt = self.get_one_hot_results(np.reshape(np.array(class_list[(cstep + 1 - config.cstep_print) * config.batch_size : (cstep + 1) * config.batch_size]), newshape=(-1, 1)))
+                tmp_topk = self.get_one_hot_results(np.array(
+                    tmp_topk[(cstep + 1 - config.cstep_print) * config.batch_size: (cstep + 1) * config.batch_size]))
+                tmp_gt = self.get_one_hot_results(np.reshape(np.array(
+                    class_list[(cstep + 1 - config.cstep_print) * config.batch_size: (cstep + 1) * config.batch_size]),
+                                                             newshape=(-1, 1)))
                 tmp_stats = utils.get_statistics(tmp_topk, tmp_gt, single_label_pred=True)
 
                 print(
                     "[Test] Epoch: [%3d][%4d/%4d] time: %.4f, loss: %s \n %s" %
-                    (epoch, cstep, test_steps, time.time() - step_time, all_loss / (cstep + 1), utils.dict_to_string_4_print(tmp_stats))
+                    (epoch, cstep, test_steps, time.time() - step_time, all_loss / (cstep + 1),
+                     utils.dict_to_string_4_print(tmp_stats))
                 )
                 step_time = time.time()
-
 
         prediction_topk = np.concatenate(topk_list, axis=0)
 
@@ -272,18 +280,20 @@ class Controller4Seen(train_base.Base_Controller):
         # print(np.squeeze(prediction_topk[-200: ]))
 
         prediction_topk = self.get_one_hot_results(np.array(prediction_topk[: test_steps * config.batch_size]))
-        ground_truth = self.get_one_hot_results(np.reshape(np.array(class_list[: test_steps * config.batch_size]), newshape=(-1, 1)))
+        ground_truth = self.get_one_hot_results(
+            np.reshape(np.array(class_list[: test_steps * config.batch_size]), newshape=(-1, 1)))
 
         stats = utils.get_statistics(prediction_topk, ground_truth, single_label_pred=True)
 
         print(
             "[Test Sum] Epoch: [%3d] time: %.4f, loss: %s \n %s" %
-            (epoch, time.time() - start_time, all_loss / test_steps , utils.dict_to_string_4_print(stats))
+            (epoch, time.time() - start_time, all_loss / test_steps, utils.dict_to_string_4_print(stats))
         )
 
         return stats, prediction_topk, ground_truth, np.array([0]), np.array([0])
 
-    def controller(self, train_text_seqs, train_class_list, test_text_seqs, test_class_list, train_epoch=config.train_epoch, save_test_per_epoch=1):
+    def controller(self, train_text_seqs, train_class_list, test_text_seqs, test_class_list,
+                   train_epoch=config.train_epoch, save_test_per_epoch=1):
 
         last_save_epoch = self.base_epoch
         global_epoch = self.base_epoch + 1
@@ -324,7 +334,6 @@ class Controller4Seen(train_base.Base_Controller):
                 last_save_epoch = global_epoch
 
             if global_epoch % save_test_per_epoch == 0:
-
                 # TODO: remove to get full test
                 print("[Test] Testing seen classes")
                 state_seen, pred_seen, gt_seen, align_seen, kg_vector_seen = self.__test__(
@@ -383,8 +392,8 @@ class Controller4Seen(train_base.Base_Controller):
             kg_vector_seen=kg_vector_seen,
         )
 
-def run_dbpedia():
 
+def run_dbpedia():
     random_group = dataloader.get_random_group(config.zhang15_dbpedia_class_random_group_path)
 
     # DBpedia
@@ -492,8 +501,8 @@ def run_dbpedia():
 
             ctl.sess.close()
 
-def run_20news():
 
+def run_20news():
     random_group = dataloader.get_random_group(config.news20_class_random_group_path)
 
     vocab = dataloader.build_vocabulary_from_full_corpus(
@@ -581,7 +590,7 @@ def run_20news():
             tl.layers.clear_layers_name()
 
             mdl = model_seen.Model4Seen(
-                #TODO: mistake: the model name should be selected_tfidf
+                # TODO: mistake: the model name should be selected_tfidf
                 model_name="seen_selected_tfidf_news20_vwonly_random%d_unseen%s_max%d_cnn" \
                            % (i + 1, "-".join(str(_) for _ in rgroup[1]), max_length),
                 start_learning_rate=0.0004,
@@ -608,8 +617,8 @@ def run_20news():
 
             ctl.sess.close()
 
-def run_amazon():
 
+def run_amazon():
     random_group = dataloader.get_random_group(config.chen14_elec_class_random_group_path)
 
     vocab = dataloader.build_vocabulary_from_full_corpus(
@@ -665,7 +674,6 @@ def run_amazon():
     print("80% length of documents: ", np.percentile(lenlist, 80))
 
     for i, rgroup in enumerate(random_group):
-
         max_length = 200
 
         with tf.Graph().as_default() as graph:
@@ -673,7 +681,7 @@ def run_amazon():
 
             mdl = model_seen.Model4Seen(
                 model_name="seen_full_chen14_elec_vwonly_random%d_unseen%s_max%d_cnn" \
-                               % (i + 1, "-".join(str(_) for _ in rgroup[1]), max_length),
+                           % (i + 1, "-".join(str(_) for _ in rgroup[1]), max_length),
                 start_learning_rate=0.0001,
                 decay_rate=0.5,
                 decay_steps=10000,
@@ -694,6 +702,7 @@ def run_amazon():
 
             ctl.sess.close()
 
+
 if __name__ == "__main__":
     if config.dataset == "dbpedia":
         run_dbpedia()
@@ -702,6 +711,3 @@ if __name__ == "__main__":
     else:
         raise Exception("config.dataset %s not found" % config.dataset)
     pass
-
-
-

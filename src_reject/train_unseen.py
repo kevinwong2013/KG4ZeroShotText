@@ -715,7 +715,6 @@ class Controller4Unseen(train_base.Base_Controller):
             global_epoch += 1
 
     def controller4test(self, test_text_seqs, test_class_list, unseen_class_list, rgroup, base_epoch=None):
-
         self.unseen_class = unseen_class_list
 
         last_save_epoch = self.base_epoch if base_epoch is None else base_epoch
@@ -763,13 +762,15 @@ class Controller4Unseen(train_base.Base_Controller):
                 state_seen = pred_seen = gt_seen = align_seen = kg_vector_seen = 0
 
             # TODO: remove to get full test
-            print("[Test] Testing unseen classes")
+            print("[Test] Testing unseen classes for", config.model)
             state_unseen, pred_unseen, gt_unseen, align_unseen, kg_vector_unseen = self.__test__(
                 global_epoch,
                 [_ for idx, _ in enumerate(unseen_test_text_seqs) if idx % 1 == 0],
                 [_ for idx, _ in enumerate(unseen_test_class_list) if idx % 1 == 0],
                 unseen_only=False if config.model == "cnnfc" or config.model == "rnnfc" else True
             )
+            print('The prediction is......', pred_unseen.shape, state_unseen)
+            print(pred_unseen)
 
         np.savez(
             self.log_save_dir + "test_full_%d" % global_epoch,
@@ -926,8 +927,9 @@ def run_dbpedia():
                 # model_name="unseen_full_zhang15_dbpedia_kg3_cluster_3group_kgonly_random%d_unseen%s_max%d_cnn_negative%dincrease%d_randomtext_aug%d" \
                 model_name="unseen_full_zhang15_dbpedia_kg3_cluster_3group_%s_random%d_unseen%s_max%d_cnn_negative%dincrease%d_randomtext_aug%d" \
                            % (
-                           config.model, i + 1, "-".join(str(_) for _ in rgroup[1]), max_length, config.negative_sample,
-                           config.negative_increase, config.augmentation),
+                               config.model, i + 1, "-".join(str(_) for _ in rgroup[1]), max_length,
+                               config.negative_sample,
+                               config.negative_increase, config.augmentation),
                 start_learning_rate=0.0001,
                 decay_rate=0.8,
                 decay_steps=2e3,
@@ -1048,7 +1050,7 @@ def run_20news():
 
         train_aug_text_seqs = dataloader.load_data_from_text_given_vocab(
             config.news20_train_augmented_path, vocab, config.news20_train_augmented_processed_path,
-            column="text", force_process=True
+            column="text", force_process=False
         )
 
         print("Augmented data size origin: ", utils.counter_of_list(train_aug_class_list))
@@ -1096,8 +1098,9 @@ def run_20news():
                 # model_name="unseen_selected_tfidf_news20_kg3_cluster_3group_kgonly_random%d_unseen%s_max%d_cnn_negative%dincrease%d_randomtext_aug%d" \
                 model_name="unseen_selected_tfidf_news20_kg3_cluster_3group_%s_random%d_unseen%s_max%d_cnn_negative%dincrease%d_randomtext_aug%d" \
                            % (
-                           config.model, i + 1, "-".join(str(_) for _ in rgroup[1]), max_length, config.negative_sample,
-                           config.negative_increase, config.augmentation),
+                               config.model, i + 1, "-".join(str(_) for _ in rgroup[1]), max_length,
+                               config.negative_sample,
+                               config.negative_increase, config.augmentation),
                 start_learning_rate=0.0001,
                 decay_rate=0.5,
                 decay_steps=600,
@@ -1243,12 +1246,183 @@ def run_amazon():
     pass
 
 
+def run_imdb():
+    random_group = dataloader.get_random_group(config.imdb_class_random_group_path)
+
+    vocab = dataloader.build_vocabulary_from_full_corpus(
+        config.imdb_full_data_path, config.imdb_vocab_path, column="text", force_process=False,
+        min_word_count=10
+    )
+
+    glove_mat = dataloader.load_glove_word_vector(
+        config.word_embed_file_path, config.imdb_word_embed_matrix_path, vocab, force_process=False
+    )
+    assert np.sum(glove_mat[vocab.start_id]) == 0
+    assert np.sum(glove_mat[vocab.end_id]) == 0
+    assert np.sum(glove_mat[vocab.unk_id]) == 0
+    assert np.sum(glove_mat[vocab.pad_id]) == 0
+
+    class_dict = dataloader.load_class_dict(
+        class_file=config.imdb_class_label_path,
+        class_code_column="ClassCode",
+        class_name_column="ConceptNet"
+    )
+
+    # check class label in vocab and glove
+    for class_id in class_dict:
+        class_label = class_dict[class_id]
+        class_label_word_id = vocab.word_to_id(class_label)
+        assert class_label_word_id != vocab.unk_id
+        assert np.sum(glove_mat[class_label_word_id]) != 0
+
+    if config.model == "cnnfc" or config.model == "rnnfc" or config.model == "vwvc" or config.model == "autoencoder":
+        kg_vector_dict = dict()
+    else:
+        kg_vector_dict = dataloader.load_kg_vector(
+            config.news20_kg_vector_dir,
+            config.news20_kg_vector_prefix,
+            class_dict
+        )
+
+    print("Check NaN in csv ...")
+    check_nan_train = dataloader.check_df(config.news20_train_path)
+    check_nan_test = dataloader.check_df(config.news20_test_path)
+    print("Train NaN %s, Test NaN %s" % (check_nan_train, check_nan_test))
+    assert not check_nan_train
+    assert not check_nan_test
+
+    train_class_list = dataloader.load_data_class(
+        filename=config.imdb_train_path,
+        column="class",
+    )
+
+    train_text_seqs = dataloader.load_data_from_text_given_vocab(
+        config.imdb_train_path, vocab, config.imdb_train_processed_path,
+        column="text", force_process=False
+        # column="selected", force_process=False
+        #column="selected_tfidf", force_process=False
+    )
+
+    test_class_list = dataloader.load_data_class(
+        filename=config.imdb_test_path,
+        column="class",
+    )
+
+    test_text_seqs = dataloader.load_data_from_text_given_vocab(
+        config.imdb_test_path, vocab, config.imdb_test_processed_path,
+         column="text", force_process=False
+        # column="selected", force_process=False
+        # column="selected_tfidf", force_process=False
+    )
+
+    for class_id in test_class_list + train_class_list:
+        assert class_id in class_dict
+
+    if config.augmentation > 0:
+        train_aug_from_class_list = dataloader.load_data_class(
+            filename=config.imdb_train_augmented_path,
+            column="from_class",
+        )
+
+        train_aug_class_list = dataloader.load_data_class(
+            filename=config.imdb_train_augmented_path,
+            column="to_class",
+        )
+
+        train_aug_text_seqs = dataloader.load_data_from_text_given_vocab(
+            config.imdb_train_augmented_path, vocab, config.imdb_train_augmented_processed_path,
+            column="text", force_process=False
+        )
+
+        print("Augmented data size origin: ", utils.counter_of_list(train_aug_class_list))
+
+    else:
+        train_aug_from_class_list = []
+        train_aug_class_list = []
+        train_aug_text_seqs = []
+
+    print(len(train_aug_class_list), len(train_aug_text_seqs))
+    assert len(train_aug_class_list) == len(train_aug_text_seqs)
+
+    lenlist = [len(text) for text in test_text_seqs] + [len(text) for text in train_text_seqs]
+    print("Avg length of documents: ", np.mean(lenlist))
+    print("95% length of documents: ", np.percentile(lenlist, 95))
+    print("90% length of documents: ", np.percentile(lenlist, 90))
+    print("80% length of documents: ", np.percentile(lenlist, 80))
+    # exit()
+
+    for i, rgroup in enumerate(random_group):
+
+        if i + 1 < config.random_group_start_idx:
+            continue
+
+        max_length = 50
+
+        print("Removing augmented data from unseen classes ...")
+        train_aug_class_list_from_seen = list()
+        train_aug_text_seqs_from_seen = list()
+        for tidx, text in enumerate(train_aug_text_seqs):
+            if train_aug_from_class_list[tidx] in rgroup[1]:
+                continue
+            train_aug_class_list_from_seen.append(train_aug_class_list[tidx])
+            train_aug_text_seqs_from_seen.append(train_aug_text_seqs[tidx])
+        assert len(train_aug_class_list_from_seen) == len(train_aug_text_seqs_from_seen)
+        print("Augmented data from seen class: %d" % len(train_aug_class_list_from_seen),
+              utils.counter_of_list(train_aug_class_list_from_seen))
+
+        with tf.Graph().as_default() as graph:
+            tl.layers.clear_layers_name()
+
+            mdl = model_unseen.Model4Unseen(
+                # model_name="unseen_selected_tfidf_news20_kg3_cluster_3group_random%d_unseen%s_max%d_cnn_negative%dincrease%d_randomtext" \
+                # model_name="unseen_selected_tfidf_news20_kg3_cluster_3group_only_smallepoch5_random%d_unseen%s_max%d_cnn_negative%dincrease%d_randomtext" \
+                # model_name="unseen_selected_tfidf_news20_kg3_cluster_3group_kgonly_random%d_unseen%s_max%d_cnn_negative%dincrease%d_randomtext_aug%d" \
+                model_name="unseen_selected_tfidf_news20_kg3_cluster_3group_%s_random%d_unseen%s_max%d_cnn_negative%dincrease%d_randomtext_aug%d" \
+                           % (
+                               config.model, i + 1, "-".join(str(_) for _ in rgroup[1]), max_length,
+                               config.negative_sample,
+                               config.negative_increase, config.augmentation),
+                start_learning_rate=0.0001,
+                decay_rate=0.5,
+                decay_steps=600,
+                max_length=max_length,
+                vocab_size=vocab.unk_id + 1,
+            )
+            # TODO: if unseen_classes are already selected, set randon_unseen_class=False and provide a list of unseen_classes
+            gpu_config = tf.ConfigProto()
+            gpu_config.gpu_options.per_process_gpu_memory_fraction = config.global_gpu_occupation
+            ctl = Controller4Unseen(
+                model=mdl,
+                vocab=vocab,
+                gpu_config=gpu_config,
+                class_dict=class_dict,
+                kg_vector_dict=kg_vector_dict,
+                word_embed_mat=glove_mat,
+                lemma=True,
+                random_unseen_class=False,
+                random_unseen_class_list=rgroup[1],
+                base_epoch=-1,
+            )
+            if config.global_is_train:
+                ctl.controller(train_text_seqs, train_class_list,
+                               train_aug_text_seqs_from_seen, train_aug_class_list_from_seen,
+                               test_text_seqs, test_class_list, rgroup=rgroup, train_epoch=10)
+            else:
+                ctl.controller4test(test_text_seqs, test_class_list, unseen_class_list=ctl.unseen_class,
+                                    rgroup=rgroup, base_epoch=config.global_test_base_epoch)
+
+            ctl.sess.close()
+    pass
+
+
 if __name__ == "__main__":
 
     if config.dataset == "dbpedia":
         run_dbpedia()
     elif config.dataset == "20news":
         run_20news()
+    elif config.dataset == "imdb":
+        run_imdb()
     else:
         raise Exception("config.dataset %s not found" % config.dataset)
     pass

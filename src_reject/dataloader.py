@@ -1,4 +1,3 @@
-
 import os
 import re
 import pickle
@@ -11,16 +10,17 @@ import progressbar
 
 import src_reject.config as config
 
-
 START_ID = '<START_ID>'
 END_ID = '<END_ID>'
 PAD_ID = '<PAD_ID>'
 UNK_ID = '<UNK_ID>'
 
+
 def get_random_group(filename):
     random_group = list()
     with open(filename, "r") as f:
         for line in f:
+            print(line)
             classlist = line.split("|")
             seen_class = [int(_) for _ in classlist[0].split(",")]
             unseen_class = [int(_) for _ in classlist[1].split(",")]
@@ -39,18 +39,20 @@ def check_df(filename):
     # df.to_csv(filename)
     return nan
 
+
 def preprocess(textlist):
     print("Preprocessing ...")
     with progressbar.ProgressBar(max_value=len(textlist)) as bar:
         for idx, text in enumerate(textlist):
             # textlist[idx].replace(",", " ")
             # textlist[idx].replace(".", " ")
-            textlist[idx] = re.sub(r'[\W_]+', ' ', textlist[idx])
+            textlist[idx] = re.sub(r'[\W_]+', ' ', str(text))
             textlist[idx] = tl.nlp.process_sentence(textlist[idx], start_word=START_ID, end_word=END_ID)
             # textlist[idx] = textlist[idx].split() # no empty string in the list
             bar.update(idx + 1)
 
     return textlist
+
 
 def create_vocab_given_text(textlist, vocab_path, min_word_count=config.prepro_min_word_count):
     # create dictionary
@@ -58,10 +60,12 @@ def create_vocab_given_text(textlist, vocab_path, min_word_count=config.prepro_m
     vocab = tl.nlp.Vocabulary(vocab_path, start_word=START_ID, end_word=END_ID, unk_word=UNK_ID)
     return vocab
 
+
 def sentence_word_to_id(textlist, vocab):
     for idx, text in enumerate(textlist):
         textlist[idx] = [vocab.word_to_id(word) for word in text]
     return textlist
+
 
 # def prepro_encode_kg_vector(kg_vector_list):
 #     for idx, kg_vector in enumerate(kg_vector_list):
@@ -81,7 +85,9 @@ def get_text_list(df, column):
         raise Exception("column should be either a string or a list of string")
     return full_text_list
 
-def load_data(filename, vocab_file, processed_file, column, min_word_count=config.prepro_min_word_count, force_process=False):
+
+def load_data(filename, vocab_file, processed_file, column, min_word_count=config.prepro_min_word_count,
+              force_process=False):
     print("Loading data ...")
 
     if not force_process and os.path.exists(processed_file) and os.path.exists(vocab_file):
@@ -112,19 +118,23 @@ def load_data(filename, vocab_file, processed_file, column, min_word_count=confi
     print("Data loaded: num of seqs %s" % len(full_text_list))
     return full_text_list, vocab
 
-def build_vocabulary_from_full_corpus(filename, vocab_file, column, min_word_count=config.prepro_min_word_count, force_process=False):
+
+def build_vocabulary_from_full_corpus(filename, vocab_file, column, min_word_count=config.prepro_min_word_count,
+                                      force_process=False):
     if not force_process and os.path.exists(vocab_file):
         print("Load vocab from local file")
         vocab = tl.nlp.Vocabulary(vocab_file, start_word=START_ID, end_word=END_ID, unk_word=UNK_ID)
     else:
         print("Creating vocab ...")
-        df = pd.read_csv(filename, index_col=0)
+        df = pd.read_excel(filename, index_col=0)
+        print(df)
 
         full_text_list = get_text_list(df, column)
         full_text_list = preprocess(full_text_list)
         vocab = create_vocab_given_text(full_text_list, vocab_path=vocab_file, min_word_count=min_word_count)
         print("Vocab created and saved in %s" % vocab_file)
     return vocab
+
 
 def load_data_class(filename, column):
     try:
@@ -134,11 +144,13 @@ def load_data_class(filename, column):
     data_class_list = df[column].tolist()
     return data_class_list
 
+
 def load_class_dict(class_file, class_code_column, class_name_column):
     class_df = pd.read_csv(class_file)
     class_dict = dict(zip(class_df[class_code_column], class_df[class_name_column]))
 
     return class_dict
+
 
 def load_data_from_text_given_vocab(filename, vocab, processed_file, column, force_process=False):
     print("Loading data given vocab ...")
@@ -153,16 +165,13 @@ def load_data_from_text_given_vocab(filename, vocab, processed_file, column, for
                 full_text_list = eval(f.read())
 
     else:
-
         try:
             df = pd.read_csv(filename, index_col=0)
         except:
-            df = pd.read_csv(filename, index_col=0, encoding="latin-1")
-
+            df = pd.read_csv(filename, index_col=0, encoding="utf-8")
         full_text_list = get_text_list(df, column)
         full_text_list = preprocess(full_text_list)
         full_text_list = sentence_word_to_id(full_text_list, vocab)
-
         if processed_file.endswith(".pkl"):
             with open(processed_file, "wb") as f:
                 pickle.dump(full_text_list, f)
@@ -170,12 +179,11 @@ def load_data_from_text_given_vocab(filename, vocab, processed_file, column, for
             with open(processed_file, "w") as f:
                 f.write(str(full_text_list))
         print("Processed data saved to %s" % processed_file)
-
     print("Data loaded: num of seqs %s" % len(full_text_list))
     return full_text_list
 
-def get_kg_vector(kg_vector_dict, class_label, word):
 
+def get_kg_vector(kg_vector_dict, class_label, word):
     prefix = '/c/en/'
 
     if not class_label.startswith(prefix):
@@ -191,6 +199,7 @@ def get_kg_vector(kg_vector_dict, class_label, word):
         if word in kg_vector_dict[class_label]:
             return kg_vector_dict[class_label][word]
         return np.zeros(config.kg_embedding_dim)
+
 
 def load_kg_vector(filedir, fileprefix, class_dict):
     print("Loading KG_VECTOR ...")
@@ -211,8 +220,8 @@ def load_kg_vector(filedir, fileprefix, class_dict):
     print(kg_vector_dict.keys())
     return kg_vector_dict
 
-def load_kg_vector_given_text_seqs(text_seqs, vocab, class_dict, kg_vector_dict, processed_file, force_process=False):
 
+def load_kg_vector_given_text_seqs(text_seqs, vocab, class_dict, kg_vector_dict, processed_file, force_process=False):
     print("Loading KG Vector ...")
     if not force_process and os.path.exists(processed_file):
         print("Processed data found in local files. Loading ...")
@@ -227,13 +236,15 @@ def load_kg_vector_given_text_seqs(text_seqs, vocab, class_dict, kg_vector_dict,
                 for class_id in class_dict:
                     kg_vector = np.zeros([len(text), config.kg_embedding_dim])
                     for widx, word_id in enumerate(text):
-                        kg_vector[widx, :] = get_kg_vector(kg_vector_dict, class_dict[class_id], vocab.id_to_word(word_id))
+                        kg_vector[widx, :] = get_kg_vector(kg_vector_dict, class_dict[class_id],
+                                                           vocab.id_to_word(word_id))
                     kg_vector_text_dict[class_id] = kg_vector
                 kg_vector_seqs.append(kg_vector_text_dict)
                 bar.update(idx)
         with open(processed_file, "wb") as f:
             pickle.dump(kg_vector_seqs, f)
     return kg_vector_seqs
+
 
 def load_glove_word_vector(filename, npzfilename, vocab, force_process=False):
     print("Glove loading ... ")
@@ -248,7 +259,7 @@ def load_glove_word_vector(filename, npzfilename, vocab, force_process=False):
 
         num = 0
         with progressbar.ProgressBar(max_value=400000) as bar:
-            with open(filename, 'r') as f:
+            with open(filename, 'r', encoding="utf-8") as f:
                 for idx, line in enumerate(f):
                     content = line.replace("\n", "").split(" ")
 
@@ -257,7 +268,7 @@ def load_glove_word_vector(filename, npzfilename, vocab, force_process=False):
 
                     word_id = vocab.word_to_id(word)
                     if word_id != vocab.unk_id:
-                        glove_mat[word_id, : ] = vect
+                        glove_mat[word_id, :] = vect
                         num += 1
                     bar.update(idx + 1)
             np.savez(npzfilename, matrix=glove_mat)
@@ -265,13 +276,15 @@ def load_glove_word_vector(filename, npzfilename, vocab, force_process=False):
 
     return glove_mat
 
+
 if __name__ == "__main__":
     # text_seqs, vocab = load_data(config.wiki_train_data_path, config.wiki_vocab_path, config.wiki_train_processed_path, column="text", force_process=True)
     # text_seqs, vocab = load_data(config.arxiv_train_data_path, config.arxiv_vocab_path, config.arxiv_train_processed_path, column="abstract", force_process=True)
 
     # vocab = build_vocabulary_from_full_corpus(config.wiki_full_data_path, config.wiki_vocab_path, column="text", force_process=True)
     # vocab = build_vocabulary_from_full_corpus(config.arxiv_full_data_path, config.arxiv_vocab_path, column="abstract", force_process=True)
-    vocab = build_vocabulary_from_full_corpus(config.zhang15_dbpedia_full_data_path, config.zhang15_dbpedia_vocab_path, column="text", force_process=False)
+    vocab = build_vocabulary_from_full_corpus(config.zhang15_dbpedia_full_data_path, config.zhang15_dbpedia_vocab_path,
+                                              column="text", force_process=False)
     # vocab = build_vocabulary_from_full_corpus(config.zhang15_yahoo_full_data_path, config.zhang15_yahoo_vocab_path, column=["question_title", "question_content", "best_answer"], force_process=False)
     # vocab = build_vocabulary_from_full_corpus(config.chen14_full_data_path, config.chen14_vocab_path, column="text", min_word_count=1, force_process=False)
     # vocab = build_vocabulary_from_full_corpus(config.news20_full_data_path, config.news20_vocab_path, column="text", min_word_count=1, force_process=False)
@@ -344,4 +357,3 @@ if __name__ == "__main__":
     '''
 
     pass
-

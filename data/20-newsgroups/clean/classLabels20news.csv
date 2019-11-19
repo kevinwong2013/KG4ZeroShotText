@@ -13,9 +13,11 @@ ClassCode,ClassLabel,ConceptNet,Count,ClassDescription,Hierarchy,ClassWord
 12,sci.crypt,crypt,991,the use of codes to put information on a website into a form that can only be read by users with permission,science,cryptography
 13,sci.electronics,electronics,981,using electricity and extremely small electrical parts such as microchips and transistors,science,electronics
 14,sci.med,medical,990,relating to medicine and the treatment of injuries and diseases,science,medical
-15,sci.space,space,987,the whole of the universe outside the Earth’s atmosphere,science,space
+15,sci.space,space,987,the whole of the universe outside the Earth's atmosphere,science,space
 16,soc.religion.christian,christian,997,the religion based on the teachings of Jesus Christ. Its followers worship in a church.,social,christian
 17,talk.politics.guns,gun,910,"a weapon that shoots bullets, for example a pistol or a rifle. You load a gun with ammunition and pull the trigger to use it",talk;politics,gun
 18,talk.politics.mideast,mideast,940,"the region of the world that consists of the countries east of the Mediterranean Sea and west of India. It includes Egypt, Jordan, Israel, Lebanon, Syria, Turkey, Iran, and Iraq.",talk;politics,mideast
 19,talk.politics.misc,politics,775,the ideas and activities involved in getting power in a country or over a particular area of the world,talk,politics
 20,talk.religion.misc,religion,628,the belief in the existence of a god or gods,talk,religion
+21,movie.character,character,910,movie actor,movie,character
+22,person.director,director,910,movie director,person,director

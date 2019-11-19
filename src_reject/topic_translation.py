@@ -119,18 +119,20 @@ def augment_train(class_label_path, train_augmented_path, train_path, nott):
     )
     
     fieldnames = ['No.','from_class', 'to_class', 'text']
-    csvwritefile = open(train_augmented_path, 'w', encoding="latin-1", newline='')
+    csvwritefile = open(train_augmented_path, 'w', encoding="utf-8", newline='')
     writer = csv.DictWriter(csvwritefile, fieldnames=fieldnames)
     writer.writeheader()
 
 
-    with open(train_path, encoding="latin-1") as csvfile:
+    with open(train_path, encoding="utf-8") as csvfile:
         reader = csv.DictReader(csvfile)
         rows = list(reader)
         random.shuffle(rows)
+        print("shuffling")
         if nott is not None: # no. of texts to be translated
             rows = rows[:min(nott, len(rows))]
         count = 0
+        print("shuffling done")
         with progressbar.ProgressBar(max_value=len(rows)) as bar:
             for idx, row in enumerate(rows):
                 text = row['text']
@@ -156,6 +158,8 @@ if __name__ == "__main__":
         augment_train(config.zhang15_dbpedia_class_label_path, config.zhang15_dbpedia_train_augmented_aggregated_path, config.zhang15_dbpedia_train_path, config.args.nott)
     elif config.dataset == "20news":
         augment_train(config.news20_class_label_path, config.news20_train_augmented_aggregated_path, config.news20_train_path, config.args.nott)
+    elif config.dataset == "imdb":
+        augment_train(config.imdb_class_label_path, config.imdb_train_augmented_aggregated_path, config.imdb_train_path, config.args.nott)
     else:
         raise Exception("config.dataset %s not found" % config.dataset)
     pass
