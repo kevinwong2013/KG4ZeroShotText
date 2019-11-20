@@ -113,7 +113,7 @@ pos_dict = {'JJ': 'a', 'JJR': 'a', 'JJS': 'a',
 
 word_embed_file_path = "../data/glove/glove.6B.200d.txt"
 word_embed_gensim_file_path = '../data/glove/glove.6B.200d.gensim.txt'
-conceptnet_path = "../data/conceptnet-assertions-en-5.6.0.csv"
+conceptnet_path = "../data/conceptnet-assertions-5.6.0.csv"
 POS_OF_WORD_path = "../data/POS_OF_WORD.pickle"
 WORD_TOPIC_TRANSLATION_path = "../data/WORD_TOPIC_TRANSLATION.pickle"
 
@@ -324,7 +324,7 @@ imdb_full_data_path = imdb_dir + "imdb_full.xlsx"
 imdb_train_path = imdb_dir + "imdb_train.csv"
 imdb_train_processed_path = imdb_dir + "processed_train_text.pkl"
 
-imdb_test_path = imdb_dir + "imdb_full.xlsx"
+imdb_test_path = imdb_dir + "imdb_test.xlsx"
 imdb_test_processed_path = imdb_dir + "processed_test_text.pkl"
 
 imdb_train_augmented_path = imdb_dir + "train_augmented.csv"
@@ -334,8 +334,8 @@ imdb_train_augmented_processed_path = imdb_dir + "processed_train_augmented_text
 
 imdb_vocab_path = imdb_dir + "vocab.txt"
 
-imdb_kg_vector_node_data_path = news20_dir + 'NODES_DATA.pickle'
-imdb_kg_vector_dir = news20_dir + "KG_VECTOR_CLUSTER_3GROUP/"
+imdb_kg_vector_node_data_path = imdb_dir + 'NODES_DATA.pickle'
+imdb_kg_vector_dir = imdb_dir + "KG_VECTOR_CLUSTER_3GROUP/"
 imdb_kg_vector_prefix = "VECTORS_CLUSTER_3_"
 
 imdb_word_embed_matrix_path = imdb_dir + "word_embed_matrix.npz"

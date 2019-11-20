@@ -289,6 +289,8 @@ if __name__ == "__main__":
         main_program(config.zhang15_dbpedia_class_label_path, config.zhang15_dbpedia_kg_vector_node_data_path, config.zhang15_dbpedia_kg_vector_dir, config.zhang15_dbpedia_kg_vector_prefix)
     elif config.dataset == "20news":
         main_program(config.news20_class_label_path, config.news20_kg_vector_node_data_path, config.news20_kg_vector_dir, config.news20_kg_vector_prefix)
+    elif config.dataset == "imdb":
+        main_program(config.imdb_class_label_path, config.imdb_kg_vector_node_data_path, config.imdb_kg_vector_dir, config.imdb_kg_vector_prefix)
     else:
         raise Exception("config.dataset %s not found" % config.dataset)
     pass

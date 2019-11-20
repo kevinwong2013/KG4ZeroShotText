@@ -1251,7 +1251,7 @@ def run_imdb():
 
     vocab = dataloader.build_vocabulary_from_full_corpus(
         config.imdb_full_data_path, config.imdb_vocab_path, column="text", force_process=False,
-        min_word_count=10
+        min_word_count=5
     )
 
     glove_mat = dataloader.load_glove_word_vector(
@@ -1272,6 +1272,7 @@ def run_imdb():
     for class_id in class_dict:
         class_label = class_dict[class_id]
         class_label_word_id = vocab.word_to_id(class_label)
+        #print(class_label_word_id, vocab.unk_id)
         assert class_label_word_id != vocab.unk_id
         assert np.sum(glove_mat[class_label_word_id]) != 0
 
@@ -1279,14 +1280,14 @@ def run_imdb():
         kg_vector_dict = dict()
     else:
         kg_vector_dict = dataloader.load_kg_vector(
-            config.news20_kg_vector_dir,
-            config.news20_kg_vector_prefix,
+            config.imdb_kg_vector_dir,
+            config.imdb_kg_vector_prefix,
             class_dict
         )
 
     print("Check NaN in csv ...")
-    check_nan_train = dataloader.check_df(config.news20_train_path)
-    check_nan_test = dataloader.check_df(config.news20_test_path)
+    check_nan_train = dataloader.check_df(config.imdb_train_path)
+    check_nan_test = dataloader.check_df(config.imdb_test_path)
     print("Train NaN %s, Test NaN %s" % (check_nan_train, check_nan_test))
     assert not check_nan_train
     assert not check_nan_test
@@ -1320,17 +1321,17 @@ def run_imdb():
 
     if config.augmentation > 0:
         train_aug_from_class_list = dataloader.load_data_class(
-            filename=config.imdb_train_augmented_path,
+            filename=config.imdb_train_augmented_aggregated_path,
             column="from_class",
         )
 
         train_aug_class_list = dataloader.load_data_class(
-            filename=config.imdb_train_augmented_path,
+            filename=config.imdb_train_augmented_aggregated_path,
             column="to_class",
         )
 
         train_aug_text_seqs = dataloader.load_data_from_text_given_vocab(
-            config.imdb_train_augmented_path, vocab, config.imdb_train_augmented_processed_path,
+            config.imdb_train_augmented_aggregated_path, vocab, config.imdb_train_augmented_processed_path,
             column="text", force_process=False
         )
 

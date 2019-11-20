@@ -30,13 +30,19 @@ def get_random_group(filename):
 
 
 def check_df(filename):
-    df = pd.read_csv(filename, index_col=0)
+    if filename.endswith(".csv"):
+        df = pd.read_csv(filename, index_col=0)
+    if filename.endswith(".xlsx"):
+        df = pd.read_excel(filename, index_col=0)
     nan = df.isnull().values.any()
-    # if nan:
-    #     print(df.isnull())
-    # df.dropna(inplace=True)
-    # df.reset_index(drop=True)
-    # df.to_csv(filename)
+    if nan:
+        print('modifying',filename)
+        df.dropna(inplace=True)
+        df.reset_index(drop=True)
+        if filename.endswith(".csv"):
+            df.to_csv(filename)
+        if filename.endswith(".xlsx"):
+            df.to_excel(filename, engine='xlsxwriter')
     return nan
 
 
@@ -138,9 +144,16 @@ def build_vocabulary_from_full_corpus(filename, vocab_file, column, min_word_cou
 
 def load_data_class(filename, column):
     try:
+        if filename.endswith(".csv"):
+            df = pd.read_csv(filename, index_col=0)
+        if filename.endswith(".xlsx"):
+            df = pd.read_excel(filename, index_col=0)
         df = pd.read_csv(filename, index_col=0)
     except:
-        df = pd.read_csv(filename, index_col=0, encoding="latin-1")
+        if filename.endswith(".csv"):
+            df = pd.read_csv(filename, index_col=0, encoding="utf-8")
+        if filename.endswith(".xlsx"):
+            df = pd.read_excel(filename, index_col=0)
     data_class_list = df[column].tolist()
     return data_class_list
 
@@ -163,12 +176,18 @@ def load_data_from_text_given_vocab(filename, vocab, processed_file, column, for
         else:
             with open(processed_file, "r") as f:
                 full_text_list = eval(f.read())
-
     else:
         try:
+            if filename.endswith(".csv"):
+                df = pd.read_csv(filename, index_col=0)
+            if filename.endswith(".xlsx"):
+                df = pd.read_excel(filename, index_col=0)
             df = pd.read_csv(filename, index_col=0)
         except:
-            df = pd.read_csv(filename, index_col=0, encoding="utf-8")
+            if filename.endswith(".csv"):
+                df = pd.read_csv(filename, index_col=0, encoding="utf-8")
+            if filename.endswith(".xlsx"):
+                df = pd.read_excel(filename, index_col=0)
         full_text_list = get_text_list(df, column)
         full_text_list = preprocess(full_text_list)
         full_text_list = sentence_word_to_id(full_text_list, vocab)
