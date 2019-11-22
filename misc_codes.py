@@ -1,2 +1,1 @@
-import nltk
-nltk.download('punkt')
+print ([[1]]*10 + [[0],[0],[0]])

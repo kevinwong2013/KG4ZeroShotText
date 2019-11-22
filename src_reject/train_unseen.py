@@ -99,7 +99,7 @@ class Controller4Unseen(train_base.Base_Controller):
         return seen_text_seqs, seen_class_list
 
     def get_text_of_unseen_class(self, text_seqs, class_list, augdata=False):
-        print("Getting text of unseen classes")
+        print("Getting text of unseen classes", len(text_seqs))
         assert len(text_seqs) == len(class_list)
         unseen_text_seqs = list()
         unseen_class_list = list()
@@ -126,6 +126,7 @@ class Controller4Unseen(train_base.Base_Controller):
         if augdata:
             print("Augmented data num of each unseen class {%s}" % (
                 ", ".join(["%s:%s" % (k, v) for k, v in unseen_class_counter.items()])))
+        print("unseen_text_seqs", len(unseen_text_seqs), unseen_class_list)
         return unseen_text_seqs, unseen_class_list
 
     def prepro_encode(self, textlist):
@@ -321,7 +322,6 @@ class Controller4Unseen(train_base.Base_Controller):
                     self.model.target_seqs: encode_seqs_id_mini,
                     self.model.target_mask: np.where(encode_seqs_id_mini == self.vocab.pad_id, 0, 1)
                 })
-
             else:
                 if config.model == "vwvc":
                     kg_vector_seqs_mini = np.zeros(
@@ -471,7 +471,9 @@ class Controller4Unseen(train_base.Base_Controller):
         start_time = time.time()
         step_time = time.time()
 
-        test_steps = len(text_seqs) // config.batch_size
+        print("the total test sequence is ",len(text_seqs))
+        test_steps = math.ceil(len(text_seqs) / config.batch_size)
+        print("the total test_steps is ", test_steps, config.batch_size)
 
         topk_list = list()
         pred_class_list = list()
@@ -480,9 +482,17 @@ class Controller4Unseen(train_base.Base_Controller):
         # kg_vector_list = list()
 
         for cstep in range(test_steps):
-
             text_seqs_mini = text_seqs[cstep * config.batch_size: (cstep + 1) * config.batch_size]
             true_class_id_mini = class_list[cstep * config.batch_size: (cstep + 1) * config.batch_size]
+
+            if len(text_seqs_mini) < config.batch_size:
+                print("inputting dummies")
+                dummy_sentence = [[1]] * (config.batch_size - len(text_seqs_mini))
+                dummy_true_class_id = [1] * (config.batch_size - len(text_seqs_mini))
+                text_seqs_mini = text_seqs_mini + dummy_sentence
+                true_class_id_mini = true_class_id_mini + dummy_true_class_id
+                print(text_seqs_mini, true_class_id_mini)
+                print("finished inputting dummies")
 
             encode_seqs_id_mini, encode_seqs_mat_mini = self.prepro_encode(text_seqs_mini)
 
@@ -562,8 +572,11 @@ class Controller4Unseen(train_base.Base_Controller):
                 step_time = time.time()
 
         prediction = np.concatenate(pred_class_list, axis=0)
-
         tmp_pred = np.concatenate(pred_class_list, axis=0)
+
+        prediction = prediction[:len(text_seqs)]
+        tmp_pred = tmp_pred[:len(text_seqs)]
+
         threshold = 0.5
         tmp_pred[tmp_pred > threshold] = 1
         tmp_pred[tmp_pred <= threshold] = 0
@@ -652,9 +665,9 @@ class Controller4Unseen(train_base.Base_Controller):
                     global_step=global_epoch
                 )
                 last_save_epoch = global_epoch
-
+            """
             if global_epoch % save_test_per_epoch == 0:
-
+                
                 if config.model == "autoencoder":
                     # TODO: remove to get full test
                     print("[Test] Testing seen classes")
@@ -674,12 +687,12 @@ class Controller4Unseen(train_base.Base_Controller):
                     )
                 else:
                     # TODO: remove to get full test
-                    print("[Test] Testing seen classes")
-                    stats_seen, pred_seen, gt_seen, align_seen, kg_vector_seen = self.__test__(
-                        global_epoch,
-                        [_ for idx, _ in enumerate(seen_test_text_seqs) if idx % 50 == 0],
-                        [_ for idx, _ in enumerate(seen_test_class_list) if idx % 50 == 0],
-                    )
+                    #print("[Test] Testing seen classes")
+                    #stats_seen, pred_seen, gt_seen, align_seen, kg_vector_seen = self.__test__(
+                    #    global_epoch,
+                    #    [_ for idx, _ in enumerate(seen_test_text_seqs) if idx % 50 == 0],
+                    #    [_ for idx, _ in enumerate(seen_test_class_list) if idx % 50 == 0],
+                    #)
 
                     # TODO: remove to get full test
                     test_percentage = 10 if config.unseen_rate == 0.25 else 20
@@ -711,7 +724,7 @@ class Controller4Unseen(train_base.Base_Controller):
                 # error.classify_single_label_for_unseen(self.log_save_dir + "test_%d.npz" % global_epoch, rgroup)
                 # class_distance_matrix = np.loadtxt(config.zhang15_dbpedia_dir + 'class_distance.txt')
                 # error.classify_adjust_single_label(self.log_save_dir + "test_%d.npz" % global_epoch, class_distance_matrix)
-
+                """
             global_epoch += 1
 
     def controller4test(self, test_text_seqs, test_class_list, unseen_class_list, rgroup, base_epoch=None):
@@ -725,7 +738,7 @@ class Controller4Unseen(train_base.Base_Controller):
                 path=self.model_save_dir,
                 global_step=last_save_epoch
             )
-
+        print('shape of test_text_seqs', len(test_text_seqs))
         seen_test_text_seqs, seen_test_class_list = self.get_text_of_seen_class(test_text_seqs, test_class_list)
         unseen_test_text_seqs, unseen_test_class_list = self.get_text_of_unseen_class(test_text_seqs, test_class_list)
 
@@ -761,6 +774,8 @@ class Controller4Unseen(train_base.Base_Controller):
             else:
                 state_seen = pred_seen = gt_seen = align_seen = kg_vector_seen = 0
 
+            print("length of unseen sequence", len(unseen_test_text_seqs))
+
             # TODO: remove to get full test
             print("[Test] Testing unseen classes for", config.model)
             state_unseen, pred_unseen, gt_unseen, align_unseen, kg_vector_unseen = self.__test__(
@@ -769,8 +784,13 @@ class Controller4Unseen(train_base.Base_Controller):
                 [_ for idx, _ in enumerate(unseen_test_class_list) if idx % 1 == 0],
                 unseen_only=False if config.model == "cnnfc" or config.model == "rnnfc" else True
             )
+
             print('The prediction is......', pred_unseen.shape, state_unseen)
             print(pred_unseen)
+            original_text_dataframe = dataloader.load_text_direct(config.imdb_test_path)
+            original_text_dataframe = pd.concat([original_text_dataframe, pd.DataFrame(pred_unseen)], axis=1)
+            print(original_text_dataframe)
+            original_text_dataframe.to_excel(config.imdb_prediction_result_path, engine='xlsxwriter')
 
         np.savez(
             self.log_save_dir + "test_full_%d" % global_epoch,
@@ -1257,6 +1277,7 @@ def run_imdb():
     glove_mat = dataloader.load_glove_word_vector(
         config.word_embed_file_path, config.imdb_word_embed_matrix_path, vocab, force_process=False
     )
+
     assert np.sum(glove_mat[vocab.start_id]) == 0
     assert np.sum(glove_mat[vocab.end_id]) == 0
     assert np.sum(glove_mat[vocab.unk_id]) == 0
@@ -1275,6 +1296,9 @@ def run_imdb():
         #print(class_label_word_id, vocab.unk_id)
         assert class_label_word_id != vocab.unk_id
         assert np.sum(glove_mat[class_label_word_id]) != 0
+
+
+    assert 1==0
 
     if config.model == "cnnfc" or config.model == "rnnfc" or config.model == "vwvc" or config.model == "autoencoder":
         kg_vector_dict = dict()
@@ -1411,7 +1435,6 @@ def run_imdb():
             else:
                 ctl.controller4test(test_text_seqs, test_class_list, unseen_class_list=ctl.unseen_class,
                                     rgroup=rgroup, base_epoch=config.global_test_base_epoch)
-
             ctl.sess.close()
     pass
 

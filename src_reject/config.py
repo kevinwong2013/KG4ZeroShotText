@@ -43,7 +43,7 @@ vocab_size = int(30000)
 train_epoch = 100
 max_length = 50
 
-batch_size = 32
+batch_size = 64
 
 # unseen_rate = 0.25
 unseen_rate = args.unseen
@@ -319,7 +319,7 @@ imdb_class_label_path = imdb_dir + "classLabelsimdb.csv"
 imdb_class_random_group_path = imdb_dir + "imdb_random_group_%s.txt" % unseen_rate
 # imdb_class_random_group_path = news20_dir + "20news_random_group_0.5.txt"
 
-imdb_full_data_path = imdb_dir + "imdb_full.xlsx"
+imdb_full_data_path = imdb_dir + "dbpedia_20news_imdb_full.xlsx"
 
 imdb_train_path = imdb_dir + "imdb_train.csv"
 imdb_train_processed_path = imdb_dir + "processed_train_text.pkl"
@@ -331,7 +331,6 @@ imdb_train_augmented_path = imdb_dir + "train_augmented.csv"
 imdb_train_augmented_aggregated_path = imdb_dir + "train_augmented_aggregated.csv"
 imdb_train_augmented_processed_path = imdb_dir + "processed_train_augmented_text.pkl"
 
-
 imdb_vocab_path = imdb_dir + "vocab.txt"
 
 imdb_kg_vector_node_data_path = imdb_dir + 'NODES_DATA.pickle'
@@ -339,6 +338,5 @@ imdb_kg_vector_dir = imdb_dir + "KG_VECTOR_CLUSTER_3GROUP/"
 imdb_kg_vector_prefix = "VECTORS_CLUSTER_3_"
 
 imdb_word_embed_matrix_path = imdb_dir + "word_embed_matrix.npz"
-
+imdb_prediction_result_path = imdb_dir + "imdb_prediction_result.xlsx"
 # imdb_class_cluster_path = news20_dir + "class_clusters_20news.pickle"
-

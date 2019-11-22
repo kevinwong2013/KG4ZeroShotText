@@ -164,6 +164,20 @@ def load_class_dict(class_file, class_code_column, class_name_column):
 
     return class_dict
 
+def load_text_direct(filename):
+    print("Loading text ...")
+    try:
+        if filename.endswith(".csv"):
+            df = pd.read_csv(filename, index_col=0)
+        if filename.endswith(".xlsx"):
+            df = pd.read_excel(filename, index_col=0)
+        df = pd.read_csv(filename, index_col=0)
+    except:
+        if filename.endswith(".csv"):
+            df = pd.read_csv(filename, index_col=0, encoding="utf-8")
+        if filename.endswith(".xlsx"):
+            df = pd.read_excel(filename, index_col=0)
+    return df
 
 def load_data_from_text_given_vocab(filename, vocab, processed_file, column, force_process=False):
     print("Loading data given vocab ...")
