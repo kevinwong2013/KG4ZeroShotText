@@ -646,10 +646,11 @@ class Controller4Unseen(train_base.Base_Controller):
                         global_epoch,
                         train_text_seqs + train_aug_text_seqs if global_epoch > 6 else train_text_seqs,
                         train_class_list + train_aug_class_list if global_epoch > 6 else train_class_list,
-                        max_train_steps=1000
+                        max_train_steps=300
                     )
                 else:
                     print("Training without augmentation")
+
                     self.__train__(
                         global_epoch,
                         train_text_seqs,
@@ -1297,8 +1298,6 @@ def run_imdb():
         assert class_label_word_id != vocab.unk_id
         assert np.sum(glove_mat[class_label_word_id]) != 0
 
-
-    assert 1==0
 
     if config.model == "cnnfc" or config.model == "rnnfc" or config.model == "vwvc" or config.model == "autoencoder":
         kg_vector_dict = dict()

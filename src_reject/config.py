@@ -43,7 +43,7 @@ vocab_size = int(30000)
 train_epoch = 100
 max_length = 50
 
-batch_size = 64
+batch_size = 48
 
 # unseen_rate = 0.25
 unseen_rate = args.unseen
@@ -334,7 +334,7 @@ imdb_train_augmented_processed_path = imdb_dir + "processed_train_augmented_text
 imdb_vocab_path = imdb_dir + "vocab.txt"
 
 imdb_kg_vector_node_data_path = imdb_dir + 'NODES_DATA.pickle'
-imdb_kg_vector_dir = imdb_dir + "KG_VECTOR_CLUSTER_3GROUP/"
+imdb_kg_vector_dir = imdb_dir + "KG_VECTOR_CLUSTER_IMDB/"
 imdb_kg_vector_prefix = "VECTORS_CLUSTER_3_"
 
 imdb_word_embed_matrix_path = imdb_dir + "word_embed_matrix.npz"
